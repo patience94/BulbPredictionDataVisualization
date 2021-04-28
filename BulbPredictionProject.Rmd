@@ -1,0 +1,422 @@
+---
+title: "DATA VISUALIZATION PROJECT (2020-2)"
+author: "Team Big Teddy"
+output: 
+  flexdashboard::flex_dashboard:
+    vertical_layout: scroll
+    social: menu
+    source: embed
+    theme: bootstrap
+    orientation: row
+runtime: shiny
+---
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(plotly)
+library(png)
+library(DT)
+library(stringr)
+
+
+load("Final_df.RData")
+load("Final_df_2.RData")
+
+```
+
+1. 프로젝트 개요 
+=======================================================================
+
+Row
+----------------------------------------------------------------------
+
+### .
+
+```{r}
+knitr::include_graphics("page1_1.png")
+```
+
+Row
+----------------------------------------------------------------------
+
+### 1
+
+```{r}
+knitr::include_graphics("page1_2.png")
+```
+
+Row
+----------------------------------------------------------------------
+
+### 2
+
+```{r}
+knitr::include_graphics("page1_3.png")
+```
+
+Row
+----------------------------------------------------------------------
+
+### 3
+
+```{r}
+knitr::include_graphics("page1_4.png")
+```
+
+Row
+----------------------------------------------------------------------
+
+### 4
+
+```{r}
+knitr::include_graphics("page1_5.png")
+```
+
+
+2. 데이터 변수 소개
+=======================================================================
+
+
+Row
+-----------------------------------------------------------------------
+
+### geom_bar with boxsize
+
+```{r}
+ggplot(Final_df,aes(boxsize,fill=boxsize))+geom_bar()+
+  geom_text(stat = 'count', aes(label=..count..), size = 5) +
+  theme_bw()
+```
+
+
+### variable description
+
+```{r}
+knitr::include_graphics("2-1.png")
+```
+
+Row
+-----------------------------------------------------------------------
+
+### geom_bar with upper_lower
+
+```{r}
+ggplot(Final_df,aes(upper_lower,fill=upper_lower))+geom_bar()+
+  geom_text(stat = 'count', aes(label=..count..), size = 5)+
+  theme_bw()
+```
+
+### variable description
+
+```{r}
+knitr::include_graphics("2-2.png")
+```
+
+Row
+-----------------------------------------------------------------------
+
+### geom_bar with side of the box
+
+```{r}
+ggplot(Final_df,aes(side,fill=side))+geom_bar()+
+  geom_text(stat = 'count', aes(label=..count..), size = 5)+
+  theme_bw()
+```
+
+### variable description
+
+```{r}
+knitr::include_graphics("2-3.png")
+```
+
+Row
+-----------------------------------------------------------------------
+
+### geom_bar with watt
+
+```{r}
+ggplot(Final_df,aes(w,fill=w))+geom_bar()+
+  geom_text(stat = 'count', aes(label=..count..), size = 5) +
+  theme_bw()
+```
+
+### variable description
+
+```{r}
+knitr::include_graphics("2-4.png")
+```
+
+
+
+3. 모델링별 변수간 상관관계
+=======================================================================
+Column {.sidebar data-width=250 data-padding=10}
+-----------------------------------------------------------------------
+```{r}
+selectInput("boxsize1", label = "size of box:",
+            choices = c('small', 'big'), selected = 'small')
+selectInput("upper1", label = "upper or lower:",
+            choices = c('upper', 'lower'), selected = 'upper')
+selectInput("side1", label = "side :",
+            choices = c('base', 'down','left','right','up','lens','bulb'),
+            selected = 'base')
+selectInput("w1", label = "watt:",
+            choices = c(15, 35), selected = 15)
+```
+
+```{r}
+knitr::include_graphics("3-1.png")
+```
+
+Column
+-----------------------------------------------------------------------
+### Correlation 선형회귀
+```{r}
+renderPlotly({
+  Final_df %>% filter(boxsize==input$boxsize1 & upper_lower==input$upper1 & side==input$side1 & w==input$w1) -> df
+ p <- ggplot(df, aes(x=temp_c, y=lm_pred)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = 'lm') +
+   labs(x ="실제온도",y= "예측온도")+
+  theme_bw() 
+p
+})
+```
+
+### Correlation h2o_Default
+```{r}
+renderPlotly({
+  Final_df %>% filter(boxsize==input$boxsize1 & upper_lower==input$upper1 & side==input$side1 & w==input$w1) -> df
+ p <- ggplot(df, aes(x=temp_c, y=deep_default_pred)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = 'lm') +
+   labs(x ="실제온도",y= "예측온도")+
+  theme_bw() 
+p
+})
+```
+
+### Correlation h2o_Teddy
+```{r}
+renderPlotly({
+  Final_df %>% filter(boxsize==input$boxsize1 & upper_lower==input$upper1 & side==input$side1 & w==input$w1) -> df
+ p <- ggplot(df, aes(x=temp_c, y=deep_pred)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = 'lm') +
+   labs(x ="실제온도",y= "예측온도")+
+  theme_bw() 
+p
+})
+```
+
+
+
+
+
+4. 모델링 성능 비교 및 3D
+=======================================================================
+Row
+-----------------------------------------------------------------------
+```{r}
+renderImage({
+  return(list(
+        src = "page4_1.jpg",
+        filetype = "image/jpg",
+        alt = ""))
+})
+```
+
+Row {data-width=350}
+-----------------------------------------------------------------------
+```{r}
+load("visual_df2.RData")
+lm_df <- visual_df2 %>% group_by(lm_pred_class) %>% summarize(count=n(),mean_diff=mean(sqrt(abs(temp_c-lm_pred))^2))
+lm_df <- as.data.frame(lm_df)
+lm_df$mean_diff <- round(lm_df$mean_diff,digits=2)
+
+deep_default_df <- visual_df2 %>% group_by(deep_default_pred_class) %>% summarize(count=n(),mean_diff=mean(sqrt(abs(temp_c-deep_default_pred))^2))
+deep_default_df <- as.data.frame(deep_default_df)
+deep_default_df$mean_diff <- round(deep_default_df$mean_diff,digits=2)
+
+deep_df <- visual_df2 %>% group_by(deep_pred_class) %>% summarize(count=n(),mean_diff=mean(sqrt(abs(temp_c-deep_pred))^2))
+deep_df <- as.data.frame(deep_df)
+deep_df$mean_diff <- round(deep_df$mean_diff,digits=2)
+
+
+plot_ly(lm_df, labels = ~lm_pred_class, values = ~count, type = 'pie',
+               textposition = 'inside',
+               textinfo = 'label+percent',
+               insidetextfont = list(color = '#FFFFFF'),
+               hoverinfo = 'text',
+               text = ~paste('평균 오차: ', mean_diff),
+               marker = list(colors = c('#54A759','#E4E453', '#D46A6A'), line = list(color = '#FFFFFF', width = 1)),
+               showlegend = FALSE) %>% 
+                      layout(title = '선형 회귀 Hitting Rate Class 정리',
+                      xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                      yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+
+plot_ly(deep_default_df, labels = ~deep_default_pred_class, values = ~count, type = 'pie',
+               textposition = 'inside',
+               textinfo = 'label+percent',
+               insidetextfont = list(color = '#FFFFFF'),
+               hoverinfo = 'text',
+               text = ~paste('평균 오차: ', mean_diff),
+               marker = list(colors = c('#54A759','#E4E453', '#D46A6A'), line = list(color = '#FFFFFF', width = 1)),
+               showlegend = FALSE) %>% 
+               layout(title = '기본 H2o 모델 Hitting Rate Class 정리',
+               xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+               yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+
+plot_ly(deep_df, labels = ~deep_pred_class, values = ~count, type = 'pie',
+                textposition = 'inside',
+                textinfo = 'label+percent',
+                insidetextfont = list(color = '#FFFFFF'),
+                hoverinfo = 'text',
+                text = ~paste('평균 오차: ', mean_diff),
+                marker = list(colors = c('#54A759','#E4E453', '#D46A6A'), line = list(color = '#FFFFFF', width = 1)),
+                showlegend = FALSE) %>% 
+                layout(title = '자체개발 H2o 모델 Hitting Rate Class 정리',
+                xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+```
+
+Column 
+-----------------------------------------------------------------------
+### 실제온도
+```{r}
+renderPlotly({
+plot_ly(data=Final_df_2, x=~x,y=~y,z=~z, colors="YlOrRd",
+        marker = list(color = ~temp_c, showscale = F, size = 20,
+                      colorbar = list(title = list(text= '전구 실제 온도'))),
+        text = ~paste("Actual temperature:", temp_c))  %>% 
+    layout(title = 'S1 전구 실측 온도')
+})
+```
+
+-------------------------------------
+### 예측모델
+```{r}
+radioButtons("check", "예측모델:",
+               c("Linear 모델" = "lin",
+                 "H2O Basic 모델" = "basic",
+                 "H2O Teddy 모델" = "teddy"),
+             selected = "lin",
+             inline = T)
+### Linear 예측 온도
+renderPlotly({
+if (input$check == 'lin'){  
+  plot_ly(data=Final_df_2, x=~x,y=~y,z=~z, 
+          marker = list(
+            showscale = F, 
+            size = 20,
+            color=~lm_pred,
+            cmin = min(Final_df_2$temp_c),
+            cmax = max(Final_df_2$temp_c),
+            colors="YlOrRd",
+            colorbar = list(title = list(text='전구 예측 온도'))),
+          text = ~paste("선형회귀 예측온도:", lm_pred)) %>% 
+    layout(title = 'Predicted Temperature by Linear Regression')
+} else if (input$check == 'basic'){
+### H2O Basic 예측 온도
+  plot_ly(data=Final_df_2, x=~x,y=~y,z=~z,
+          marker = list(
+            showscale = F, 
+            size = 20,
+            color=~deep_default_pred,
+            cmin = min(Final_df_2$temp_c),
+            cmax = max(Final_df_2$temp_c),
+            colors='YlOrRd',
+            colorbar = list(title = list(text='전구 예측 온도'))),
+          text = ~paste("H2o 기본 딥러닝 예측온도", deep_default_pred))  %>% 
+    layout(title = 'Predicted Temperature by H2o default')
+} else if (input$check == 'teddy') {
+### H2O Teddy 예측 온도
+  plot_ly(data=Final_df_2, x=~x,y=~y,z=~z,
+          marker = list(
+            showscale = F,
+            size= 20,
+            color=~deep_pred,
+            cmin = min(Final_df_2$temp_c),
+            cmax = max(Final_df_2$temp_c),
+            coloraxis=list(reversescale =T),
+            colorbar = list(title = list(text='전구 예측 온도'))),
+          text = ~paste("H2o Teddy 딥러닝 예측온도", deep_pred))  %>% 
+    layout(title = 'Predicted Temperature by H2o Teddy 도')
+  }
+})
+```
+
+5. New Data, New Predict
+=======================================================================
+Column {data-height=250}
+-----------------------------------------------------------------------
+```{r}
+fileInput("file1", "Choose CSV File",
+                multiple = TRUE,
+                accept = c("text/csv",
+                         "text/comma-separated-values,text/plain",
+                         ".csv"))
+checkboxInput("header", "Header", TRUE)
+radioButtons("sep", "Separator",
+                   choices = c(Comma = ",",
+                               Semicolon = ";",
+                               Tab = "\t"),
+                   selected = ",")
+```
+
+
+Column
+-----------------------------------------------------------------------
+```{r}
+renderPlotly({
+  inFile <- input$file1
+  if (is.null(inFile))
+    return(NULL)
+  else {
+    new_dataset <- reactive({
+      df <- read.csv(inFile$datapath)
+      # h20 최적화 모델을 사용해 온도를 예측하고 column의 추가하는 파트
+    })
+    new_df <- new_dataset()
+    plot_ly(data=new_df, x=~x,y=~y,z=~z, colors="YlOrRd",
+          marker = list(color = ~temperature, showscale = T,
+                        colorbar = list(title = list(text="Bulb Predicted Temperature"))),
+        text = ~paste("Predict temperature:", temperature))
+  }
+})
+```
+
+
+```{r}
+DT::renderDataTable({
+  inFile <- input$file1
+  if (is.null(inFile))
+    return(NULL)
+  else {
+    new_dataset <- reactive({
+      df <- read.csv(inFile$datapath)
+      # h20 최적화 모델을 사용해 온도를 예측하고 column의 추가하는 파트
+    })
+    new_df <- new_dataset()
+    return(new_df)
+  }
+},
+  extensions = c('Scroller','Buttons'),
+  class = 'compact cell-border stripe',  rownames = FALSE,
+  server = FALSE,
+  filter = list( position = 'top', clear = FALSE, plain =TRUE ),
+  options = list(
+    deferRender = FALSE,
+    scrollY = 200,
+    scroller = TRUE,
+    dom = 'Bfrtip',
+    buttons = list(list(extend = 'csv', 
+                        filename= paste(str_sub(input$file1$name,1,-5), '_', str_sub(as.character(Sys.Date()),3,-1),'_update', sep=''),
+                        text = '<span class="glyphicon glyphicon-download-alt"></span>'))
+  )
+)
+```
